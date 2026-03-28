@@ -1,0 +1,22 @@
+[package]
+name = "basemark-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI and MCP server for Basemark wiki"
+license = "MIT"
+repository = "https://github.com/fmayala/basemark-cli"
+
+[[bin]]
+name = "basemark"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+toml = "0.8"
+dirs = "6"
+anyhow = "1"
+atty = "0.2"

@@ -3,6 +3,7 @@ use std::io::Read;
 
 use crate::client::BasemarkClient;
 use crate::config::Config;
+use crate::convert;
 use crate::output;
 
 fn read_stdin() -> Option<String> {
@@ -35,8 +36,14 @@ pub async fn run(
     };
     let final_content = content.or(stdin_content.as_deref());
 
+    // Convert markdown content to Tiptap JSON before sending to the API.
+    let tiptap_string = final_content.map(|md| {
+        let tiptap_json = convert::markdown_to_tiptap_json(md);
+        serde_json::to_string(&tiptap_json).expect("failed to serialize Tiptap JSON")
+    });
+
     let doc = client
-        .create_document(title, final_content, collection_id)
+        .create_document(title, tiptap_string.as_deref(), collection_id)
         .await?;
     output::print_json(&doc, pretty)
 }

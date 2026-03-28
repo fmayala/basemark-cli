@@ -4,6 +4,7 @@ mod client;
 mod commands;
 mod config;
 mod convert;
+mod mcp;
 mod output;
 
 #[derive(Parser)]
@@ -131,9 +132,6 @@ async fn main() -> anyhow::Result<()> {
             commands::share::run(&config, &id, public, private, invite.as_deref(), url, cli.pretty)
                 .await
         }
-        Commands::Mcp => {
-            eprintln!("MCP server not yet implemented");
-            Ok(())
-        }
+        Commands::Mcp => mcp::run(&config).await,
     }
 }

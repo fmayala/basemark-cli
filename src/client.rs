@@ -30,6 +30,17 @@ pub struct SearchResult {
     pub snippet: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Collection {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: Option<f64>,
+    pub created_at: Option<i64>,
+}
+
 /// Wrapper for the JSON envelope the API returns.
 #[derive(Deserialize)]
 struct DataEnvelope<T> {
@@ -211,5 +222,101 @@ impl BasemarkClient {
 
         let envelope: DataEnvelope<Vec<SearchResult>> = resp.json().await?;
         Ok(envelope.data)
+    }
+
+    /// List all collections.
+    pub async fn list_collections(&self) -> Result<Vec<Collection>> {
+        let url = format!("{}/api/collections", self.base_url);
+
+        let resp = self
+            .http
+            .get(&url)
+            .bearer_auth(&self.token)
+            .send()
+            .await
+            .context("Failed to send list-collections request")?
+            .error_for_status()
+            .context("API returned an error for list-collections")?;
+
+        let envelope: DataEnvelope<Vec<Collection>> = resp.json().await?;
+        Ok(envelope.data)
+    }
+
+    /// Create a new collection.
+    pub async fn create_collection(&self, name: &str) -> Result<Collection> {
+        let url = format!("{}/api/collections", self.base_url);
+        let body = serde_json::json!({ "name": name });
+
+        let resp = self
+            .http
+            .post(&url)
+            .bearer_auth(&self.token)
+            .json(&body)
+            .send()
+            .await
+            .context("Failed to send create-collection request")?
+            .error_for_status()
+            .context("API returned an error for create-collection")?;
+
+        let envelope: DataEnvelope<Collection> = resp.json().await?;
+        Ok(envelope.data)
+    }
+
+    /// Delete a collection by ID.
+    pub async fn delete_collection(&self, id: &str) -> Result<()> {
+        let url = format!("{}/api/collections/{}", self.base_url, id);
+
+        self.http
+            .delete(&url)
+            .bearer_auth(&self.token)
+            .send()
+            .await
+            .context("Failed to send delete-collection request")?
+            .error_for_status()
+            .context("API returned an error for delete-collection")?;
+
+        Ok(())
+    }
+
+    /// Set a document's public/private visibility.
+    pub async fn update_document_public(
+        &self,
+        id: &str,
+        is_public: bool,
+    ) -> Result<Document> {
+        let url = format!("{}/api/documents/{}", self.base_url, id);
+        let body = serde_json::json!({ "isPublic": is_public });
+
+        let resp = self
+            .http
+            .put(&url)
+            .bearer_auth(&self.token)
+            .json(&body)
+            .send()
+            .await
+            .context("Failed to send update-public request")?
+            .error_for_status()
+            .context("API returned an error for update-public")?;
+
+        let envelope: DataEnvelope<Document> = resp.json().await?;
+        Ok(envelope.data)
+    }
+
+    /// Invite a user by email to a document.
+    pub async fn invite_to_document(&self, doc_id: &str, email: &str) -> Result<()> {
+        let url = format!("{}/api/documents/{}/permissions", self.base_url, doc_id);
+        let body = serde_json::json!({ "email": email });
+
+        self.http
+            .post(&url)
+            .bearer_auth(&self.token)
+            .json(&body)
+            .send()
+            .await
+            .context("Failed to send invite request")?
+            .error_for_status()
+            .context("API returned an error for invite")?;
+
+        Ok(())
     }
 }

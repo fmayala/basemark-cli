@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 mod client;
 mod commands;
 mod config;
+mod convert;
 mod output;
 
 #[derive(Parser)]
@@ -62,7 +63,7 @@ enum Commands {
     /// Manage collections
     Collections {
         #[command(subcommand)]
-        action: commands::config_cmd::ConfigAction, // placeholder — will be replaced in Task 4
+        action: commands::collections::CollectionAction,
     },
     /// Share a document
     Share {
@@ -117,8 +118,21 @@ async fn main() -> anyhow::Result<()> {
         Commands::Search { query } => {
             commands::search::run(&config, &query, cli.pretty).await
         }
-        _ => {
-            eprintln!("Command not yet implemented");
+        Commands::Collections { action } => {
+            commands::collections::run(&config, action, cli.pretty).await
+        }
+        Commands::Share {
+            id,
+            public,
+            private,
+            invite,
+            url,
+        } => {
+            commands::share::run(&config, &id, public, private, invite.as_deref(), url, cli.pretty)
+                .await
+        }
+        Commands::Mcp => {
+            eprintln!("MCP server not yet implemented");
             Ok(())
         }
     }

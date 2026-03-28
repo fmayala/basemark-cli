@@ -1,7 +1,9 @@
 use clap::{Parser, Subcommand};
 
-mod config;
+mod client;
 mod commands;
+mod config;
+mod output;
 
 #[derive(Parser)]
 #[command(name = "basemark", about = "CLI for Basemark wiki", version)]
@@ -82,8 +84,39 @@ enum Commands {
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
+    let config = config::Config::load()?;
+
     match cli.command {
         Commands::Config { action } => commands::config_cmd::run(action),
+        Commands::Create {
+            title,
+            collection,
+            content,
+        } => {
+            commands::create::run(
+                &config,
+                &title,
+                collection.as_deref(),
+                content.as_deref(),
+                cli.pretty,
+            )
+            .await
+        }
+        Commands::Read { id, json } => {
+            commands::read::run(&config, &id, json, cli.pretty).await
+        }
+        Commands::Update { id, title } => {
+            commands::update::run(&config, &id, title.as_deref(), cli.pretty).await
+        }
+        Commands::Delete { id, force } => {
+            commands::delete::run(&config, &id, force).await
+        }
+        Commands::List { collection } => {
+            commands::list::run(&config, collection.as_deref(), cli.pretty).await
+        }
+        Commands::Search { query } => {
+            commands::search::run(&config, &query, cli.pretty).await
+        }
         _ => {
             eprintln!("Command not yet implemented");
             Ok(())
